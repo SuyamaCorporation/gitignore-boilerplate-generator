@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>.gitignore ボイラープレート ジェネレーター</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4 text-gray-800">.gitignore ボイラープレート ジェネレーター</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Stack Selection -->
+    <div class="lg:col-span-1 bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold mb-3 text-gray-700">技術スタック選択</h2>
+      <div id="stackList" class="space-y-2"></div>
+      <div class="mt-4">
+        <label for="customRules" class="block text-sm font-medium text-gray-700 mb-1">カスタムルール（1行1エントリ）:</label>
+        <textarea id="customRules" rows="5" class="w-full border rounded px-2 py-1 text-sm font-mono" placeholder="*.myext&#10;my-secret-file.txt" aria-label="カスタムルール"></textarea>
+      </div>
+      <button onclick="generate()" class="w-full mt-3 bg-blue-600 text-white rounded px-4 py-2 text-sm hover:bg-blue-700" aria-label="生成する">生成する</button>
+    </div>
+
+    <!-- Output -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-semibold text-gray-700">生成された .gitignore</h2>
+        <div class="flex gap-2">
+          <button onclick="copyOutput()" class="bg-gray-200 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-300" aria-label="コピー">コピー</button>
+          <button onclick="downloadOutput()" class="bg-green-600 text-white rounded px-3 py-1 text-sm hover:bg-green-700" aria-label="ダウンロード">ダウンロード</button>
+        </div>
+      </div>
+      <textarea id="output" rows="30" class="w-full border rounded px-3 py-2 text-sm font-mono bg-gray-50" readonly aria-label="生成された.gitignore"></textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+const STACKS = {
+  'Node.js': {
+    label: 'Node.js / npm',
+    rules: `# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.pnp.*
+.yarn/
+*.lock
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local`
+  },
+  'Python': {
+    label: 'Python / pip',
+    rules: `# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+.ipynb_checkpoints`
+  },
+  'Java': {
+    label: 'Java / Maven / Gradle',
+    rules: `# Java
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+target/
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.project
+.classpath
+.settings/`
+  },
+  'Go': {
+    label: 'Go',
+    rules: `# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+/dist`
+  },
+  'Rust': {
+    label: 'Rust / Cargo',
+    rules: `# Rust
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb`
+  },
+  'Swift': {
+    label: 'Swift / Xcode',
+    rules: `# Swift
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swp
+.build/
+*.xcworkspace
+.resolved`
+  },
+  'C++': {
+    label: 'C / C++',
+    rules: `# C/C++
+*.d
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+*.so
+*.dylib
+*.dll
+*.mod
+*.smod
+*.lai
+*.la
+*.a
+*.lib
+*.exe
+*.out
+*.app
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+build/`
+  },
+  'macOS': {
+    label: 'macOS',
+    rules: `# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk`
+  },
+  'Windows': {
+    label: 'Windows',
+    rules: `# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk`
+  },
+  'Linux': {
+    label: 'Linux',
+    rules: `# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*`
+  },
+  'VSCode': {
+    label: 'VS Code',
+    rules: `# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix`
+  },
+  'JetBrains': {
+    label: 'JetBrains IDE',
+    rules: `# JetBrains
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.idea_modules/`
+  },
+  'Xcode': {
+    label: 'Xcode',
+    rules: `# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace
+!default.xcworkspace`
+  },
+};
+
+function renderStacks() {
+  const saved = getSaved();
+  const container = document.getElementById('stackList');
+  Object.entries(STACKS).forEach(([key, info]) => {
+    const label = document.createElement('label');
+    label.className = 'flex items-center gap-2 cursor-pointer text-sm';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = key;
+    cb.id = `stack-${key}`;
+    cb.checked = saved.includes(key);
+    cb.setAttribute('aria-label', info.label);
+    const span = document.createElement('span');
+    span.textContent = info.label;
+    label.appendChild(cb);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
+function getSelected() {
+  return Array.from(document.querySelectorAll('#stackList input[type=checkbox]:checked')).map(c => c.value);
+}
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('gitignore-selected') || '[]'); } catch(e) { return []; }
+}
+
+function generate() {
+  const selected = getSelected();
+  localStorage.setItem('gitignore-selected', JSON.stringify(selected));
+
+  const seen = new Set();
+  const sections = [];
+
+  selected.forEach(key => {
+    if (!STACKS[key]) return;
+    const lines = STACKS[key].rules.split('\n');
+    const section = [];
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        section.push(line);
+      } else if (!seen.has(trimmed)) {
+        seen.add(trimmed);
+        section.push(line);
+      }
+    });
+    sections.push(section.join('\n'));
+  });
+
+  // Custom rules
+  const custom = document.getElementById('customRules').value.trim();
+  if (custom) {
+    const customLines = ['', '# カスタムルール'];
+    custom.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed);
+        customLines.push(trimmed);
+      }
+    });
+    sections.push(customLines.join('\n'));
+  }
+
+  const output = sections.join('\n\n').trim();
+  document.getElementById('output').value = output || '# スタックを選択してください';
+}
+
+function copyOutput() {
+  const txt = document.getElementById('output').value;
+  navigator.clipboard.writeText(txt);
+  const btn = event.target;
+  btn.textContent = 'コピー済！';
+  setTimeout(() => btn.textContent = 'コピー', 1500);
+}
+
+function downloadOutput() {
+  const txt = document.getElementById('output').value;
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '.gitignore';
+  a.click();
+}
+
+renderStacks();
+generate();
+</script>
+</body>
+</html>
